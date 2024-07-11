@@ -124,8 +124,49 @@ const logoutUser = AsyncHandler(async(req, res) => {
     )
 })
 
+const updateProfileInfo = AsyncHandler(async(req, res) => {
+  const { firstname, lastname, email } = req.body
+
+  if (!firstname && !lastname && !email) {
+    throw new ApiError(400, "Fields should not be empty")
+  }
+
+  if (firstname === " " || lastname === " ") {
+    throw new ApiError(400, "firstname or lastname should not be empty")
+  }
+
+  if (email) {
+    if (!email.includes("@")) {
+      throw new ApiError(400, "Invalid email")
+    }
+  }
+
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        firstname: firstname ? firstname.toLowerCase().trim() : req.user.firstname,
+        lastname: lastname ? lastname.toLowerCase().trim() : req.user.lastname,
+        email: email ? email.toLowerCase().trim() : req.user.email
+      }
+    },
+    {
+      new: true
+    }
+  )
+
+  const updatedUser = await User.findOne(req.user._id).select("-password -refreshToken")
+
+  return res
+  .status(201)
+  .json(
+    new ApiResponse(200, updatedUser, "User details are updated successfully!")
+  )
+})
+
 export { 
     registerUser, 
     loginUser,
-    logoutUser 
+    logoutUser,
+    updateProfileInfo
 };
